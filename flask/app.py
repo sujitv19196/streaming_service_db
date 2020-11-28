@@ -2,6 +2,8 @@ from flask import Flask
 from flask_mysqldb import MySQL 
 from flask import request
 from flask_cors import CORS
+from flask_pymongo import PyMongo
+
 
 
 app = Flask(__name__)
@@ -75,3 +77,37 @@ def update():
     mysql.connection.commit()
     print(query)
     return "Updated id: {}".format(movie_id)
+
+mongo = PyMongo(app)
+
+@app.route("/mongo/list")
+def mongo_list():
+    result = mongo.db.streamingServices.find()
+    return {"data": list(result)}
+
+@app.route("/mongo/insert")
+def mongo_insert():
+    platform = request.args.get('platform', "None")
+    title = request.args.get('name', "None")
+    imdb_id = request.args.get('id', "None")
+    doc = {"platform": platform, "title": title, "imdb_title_id": imdb_id}
+    mongo.db.streamingServices.insert_one(doc)
+    return "inserted {}".format(doc)
+
+@app.route('/mongo/search')
+def mongo_serach():
+    name = request.args.get('name', None)
+    
+    result = mongo.db.streamingServices.find({"title": name})
+    
+    return {"data": list(result)}
+
+
+@app.route('/mongo/delete', methods=['POST', 'GET'])
+def mongo_delete():
+    name = request.args.get('name', None)
+    platform = request.args.get('platform', "None")
+   
+    mongo.db.streamingServices.remove({"title": name, "platform": platform}, True)
+
+    return "deleted {} on {}".format(name, platform)
